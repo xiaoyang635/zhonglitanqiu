@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<title>受到重力感召的小球</title>
+<style>
+*{
+	margin: 0px;
+	padding: 0px;
+}
+
+html, body{
+	width:100%;
+	min-width: 320px;
+	min-height: 480px;
+	height: 100%;
+}
+
+.container{
+	width: 100%;
+	height: 90%;
+	position: relative;
+	overflow: hidden;
+	box-sizing: content-box;
+	border-bottom: 3px solid #022889;	
+}
+
+.box{
+	width: 80px;
+	height: 80px;
+	cursor: move;
+	position: absolute;
+	left: 100px;
+	top: 100px;
+	background:#C22BE6;
+	border-radius: 100%;
+}
+
+</style>
+</head>
+<body>
+
+
+	<div class="container">
+		<div class="box"></div>
+	</div>
+
+
+<script>
+// 获取相关的元素
+var con = document.querySelector(".container");
+var box = document.querySelector(".box");
+
+
+// 运行中用到的参数
+var para = {
+	'moveOff' : false,
+	'offsetX' : 0,
+	'offsetY' : 0,
+	'boxX' : 0,
+	'boxY' : 0,
+	'diffX' : 0,
+	'diffY' : 0,
+	'timer' : null,
+	'speedX' : 0,
+	'speedY' : 0,
+	'gravityOff' : true,
+	'gravityNum' : 3,
+	'finction' : 3,
+	'finctionOff' : false,
+	'finctionTimer' : null,
+	'timeFrag' : 30,
+	'posArr' : []
+
+};
+
+
+function limitPos(con, box){
+	var boxL = box.offsetLeft;
+	var boxT = box.offsetTop;
+	var conW = con.offsetWidth;
+	var conH = con.offsetHeight;
+	var boxW = box.offsetWidth;
+	var boxH = box.offsetHeight;
+	if (boxL <= 0) {
+		box.style.left = '0px';
+	}else if(boxL >= conW-boxW){
+		box.style.left = conW-boxW + 'px';
+	}
+	if (boxT <= 0) {
+		box.style.top = '0px';
+	}else if(boxT >= conH-boxH){
+		box.style.top = conH-boxH-3 + 'px';
+	}
+}
+
+
+function go(box){
+	clearInterval(para.timer);
+	para.timer = setInterval(function(){
+		if (box.offsetLeft <= 0 || box.offsetLeft >= con.offsetWidth-box.offsetWidth) {
+			para.speedX = para.speedX > 0 ? (para.speedX-para.finction)*(-1) : (para.speedX+para.finction)*(-1);
+		}
+		
+		if (box.offsetTop <= 1 || box.offsetTop >= con.offsetHeight-box.offsetHeight-3) {
+			para.speedY = para.speedY*(-1);
+		}
+		box.style.left = box.offsetLeft + para.speedX + 'px';
+		box.style.top = box.offsetTop + para.speedY + 5 + 'px';
+		limitPos(con, box);
+		if (Math.abs(para.speedY) <= para.gravityNum && box.offsetTop >= con.offsetHeight-box.offsetHeight-3) {
+			para.speedY = 0;
+			para.gravityOff = false;
+			para.finctionOff = true;
+		}
+
+		if (para.gravityOff) {
+			para.speedY += para.gravityNum;
+		}
+		if (para.speedY == 0 && para.speedX == 0) {
+			clearInterval(para.timer);
+		}
+	}, para.timeFrag);
+}
+
+
+
+
+// 移动端事件
+if( /Android|ucweb|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ) {
+
+
+box.addEventListener('touchstart', function(e){
+	clearInterval(para.timer);
+	para.diffX = e.changedTouches[0].clientX - box.offsetLeft;
+	para.diffY = e.changedTouches[0].clientY - box.offsetTop;
+	para.moveOff = true;
+
+})
+
+
+document.addEventListener('touchmove', function(e){
+	if (para.moveOff) {
+		box.style.left = e.changedTouches[0].clientX - para.diffX + 'px';
+		box.style.top = e.changedTouches[0].clientY - para.diffY + 'px';
+		limitPos(con, box);
+		var oDate = new Date();
+		var cellTime = oDate.getTime();
+		var newPos = [e.changedTouches[0].clientX, e.changedTouches[0].clientY, cellTime];
+		para.posArr.push(newPos);
+		if (para.posArr.length >= 4) {
+			para.posArr.shift();
+		}
+	}
+});
+
+
+document.addEventListener('touchend', function(e){
+	if (para.moveOff) {
+		para.gravityOff = true;
+		para.moveOff = false;
+		para.speedX = (para.posArr[2][0]-para.posArr[0][0])/(para.posArr[2][2]-para.posArr[0][2])*10;
+		para.speedY = (para.posArr[2][1]-para.posArr[0][1])/(para.posArr[2][2]-para.posArr[0][2])*10;
+		console.log(para.speedY)
+		go(box);
+	}
+	
+});
+
+
+// PC端事件
+}else{
+
+
+// 注册按下事件
+box.onmousedown = function(e){
+	var e = e || event;
+	clearInterval(para.timer);
+	para.diffX = e.offsetX;
+	para.diffY = e.offsetY;
+	para.moveOff = true;
+	para.posArr = [];	
+};
+
+
+// 拖动事件
+document.onmousemove = function(e){
+	var e = e || event;
+	if (para.moveOff) {
+		box.style.left = e.clientX - para.diffX + 'px';
+		box.style.top = e.clientY - para.diffY + 'px';
+		limitPos(con, box);
+		var oDate = new Date();
+		var cellTime = oDate.getTime();
+		var newPos = [e.clientX, e.clientY, cellTime];
+		para.posArr.push(newPos);
+		if (para.posArr.length >= 4) {
+			para.posArr.shift();
+		}
+		
+	}
+	
+};
+
+
+// 抬起鼠标事件
+document.onmouseup = function(e){
+	var e = e || event;
+	if (para.moveOff) {
+		para.gravityOff = true;
+		para.moveOff = false;				
+		para.speedX = (para.posArr[2][0]-para.posArr[0][0])/(para.posArr[2][2]-para.posArr[0][2])*10;
+		para.speedY = (para.posArr[2][1]-para.posArr[0][1])/(para.posArr[2][2]-para.posArr[0][2])*10;
+		console.log(para.speedY)
+		go(box);
+	}
+	
+};
+
+
+
+
+
+
+
+};
+
+</script>
+</body>
+</html>
